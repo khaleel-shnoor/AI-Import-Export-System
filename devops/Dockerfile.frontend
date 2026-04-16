@@ -1,0 +1,13 @@
+# Frontend Dockerfile
+FROM node:18-slim
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# In real apps, we would build and serve with Nginx, 
+# but for development we can use npm start / npm run dev
+CMD ["npm", "run", "dev", "--", "--host"]
