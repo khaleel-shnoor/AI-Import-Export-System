@@ -1,38 +1,48 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 
-// Placeholder Pages
-const Home = () => <div className="page"><h1>Home - Live Ticker & Updates</h1></div>;
-const Schedules = () => <div className="page"><h1>Schedules & Routings</h1></div>;
-const Tracking = () => <div className="page"><h1>Live ETA Tracking</h1></div>;
-const Quotations = () => <div className="page"><h1>Get a Quote in 30 Seconds</h1></div>;
-const Booking = () => <div className="page"><h1>Vessel Booking</h1></div>;
-const ComplianceUploads = () => <div className="page"><h1>Upload BL Drafts & VGM</h1></div>;
-const RiskModule = () => <div className="page"><h1>Risk Assessment & Custom Categories</h1></div>;
-const AnalyticsDashboard = () => <div className="page"><h1>Financial Analytics Dashboard</h1></div>;
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+
+import Overview from "./pages/Overview";
+import Documents from "./pages/Documents";
+import HSN from "./pages/HSN";
+import Duty from "./pages/Duty";
+import Risk from "./pages/Risk";
+import Shipments from "./pages/Shipments";
+import Analytics from "./pages/Analytics";
+
+import DashboardLayout from "./layout/DashboardLayout";
+import ProtectedRoute from "./routes/ProtectedRoutes";
 
 function App() {
   return (
-    <Router>
-      <div className="app-container">
-        <Navbar />
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/schedules" element={<Schedules />} />
-            <Route path="/tracking" element={<Tracking />} />
-            <Route path="/quotations" element={<Quotations />} />
-            <Route path="/booking" element={<Booking />} />
-            <Route path="/compliance" element={<ComplianceUploads />} />
-            <Route path="/risk-module" element={<RiskModule />} />
-            <Route path="/analytics" element={<AnalyticsDashboard />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </Router>
+    <BrowserRouter>
+      <Routes>
+
+        {/* Public Routes */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* Protected Dashboard Routes */}
+        <Route element={<ProtectedRoute />}>
+          
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<Overview />} />
+            <Route path="overview" element={<Overview />} />
+            <Route path="documents" element={<Documents />} />
+            <Route path="hsn" element={<HSN />} />
+            <Route path="duty" element={<Duty />} />
+            <Route path="risk" element={<Risk />} />
+            <Route path="shipments" element={<Shipments />} />
+            <Route path="analytics" element={<Analytics />} />
+          </Route>
+
+        </Route>
+
+      </Routes>
+    </BrowserRouter>
   );
 }
 

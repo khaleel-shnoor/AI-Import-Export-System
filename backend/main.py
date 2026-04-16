@@ -1,25 +1,32 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.router import api_router
-from app.core.config import settings
+import traceback
+from database import engine, Base  # Import Base and engine
+from auth.routes import router as auth_router
+from auth import models  # Import models to ensure they're registered
 
-app = FastAPI(
-    title="AI-Powered Import Export Intelligence System",
-    description="Enterprise SRS + LLD Platform",
-    version="1.0.0"
-)
+# Create all tables
+Base.metadata.create_all(bind=engine)
 
-# CORS middleware
+app = FastAPI(title="AI Import-Export Intelligence System")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Update for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix="/api/v1")
+app.include_router(auth_router)
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to the Import Export Intelligence API"}
+async def root():
+    return {"message": "AI Import-Export System Backend is Running ✅"}
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    print("=== INTERNAL SERVER ERROR ===")
+    print(traceback.format_exc())
+    return {"detail": "Internal Server Error"}
