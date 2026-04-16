@@ -9,7 +9,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post("/login", response_model=schemas.Token)
 def login_for_access_token(
     login_data: schemas.LoginRequest,
-    db: Session = Depends(get_db)     # ← Now it points to a real function
+    db: Session = Depends(get_db)    
 ):
     user = service.authenticate_user(db, login_data.email, login_data.password)
     
