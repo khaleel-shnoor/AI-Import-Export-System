@@ -26,17 +26,28 @@ def extract_text_from_file(file_path: str, file_extension: str) -> str:
 
 
 async def process_invoice_with_llm(raw_text: str) -> dict:
-    prompt = """
-    Extract invoice data and return ONLY valid JSON.
+    prompt = """You are an invoice data extraction AI. 
+Read the invoice text below and return ONLY a valid JSON object with these exact keys.
+If a field is not found in the invoice, use null.
 
-    Format:
-    {
-      "product_name": "",
-      "quantity": 0,
-      "price": 0,
-      "country": ""
-    }
-    """
+Required JSON format:
+{
+  "product_name": "<name of the main product or item on the invoice>",
+  "quantity": <integer quantity, e.g. 2>,
+  "price": <unit price as a float, e.g. 862.09>,
+  "country": "<country of origin or seller's country>",
+  "destination_country": "<ship-to country or buyer's country>",
+  "invoice_number": "<invoice number or order ID>",
+  "invoice_date": "<invoice date as written, e.g. Oct 25 2012>",
+  "currency": "<currency code, e.g. USD>",
+  "description": "<brief product description if available>",
+  "total_value": <total invoice amount as float>
+}
+
+Return ONLY the JSON object. No explanation, no markdown fences.
+
+Invoice Text:
+"""
 
     # ✅ Load API key properly
     OPENROUTER_API_KEY = os.getenv("OPEN_ROUTER_API_KEY")
@@ -54,7 +65,7 @@ async def process_invoice_with_llm(raw_text: str) -> dict:
         "messages": [
             {
                 "role": "user",
-                "content": prompt + "\n\n" + raw_text
+                "content": prompt + raw_text
             }
         ]
     }
@@ -78,11 +89,14 @@ async def process_invoice_with_llm(raw_text: str) -> dict:
 
         content = result["choices"][0]["message"]["content"]
 
-        # Clean markdown JSON
-        clean_text = content.strip().replace("```json", "").replace("```", "")
+        # Clean markdown JSON fences if present
+        clean_text = content.strip()
+        if clean_text.startswith("```"):
+            clean_text = clean_text.split("```")[-2] if clean_text.count("```") >= 2 else clean_text
+            clean_text = clean_text.lstrip("json").strip()
 
         return json.loads(clean_text)
 
     except Exception as e:
         print("LLM ERROR:", str(e))
-        return {"error": str(e)}
+        return {"error": str(e)}

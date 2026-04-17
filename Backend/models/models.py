@@ -2,9 +2,8 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, Numeric, TIMESTAM
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from database import Base # Assuming your declarative_base() is in database.py
+from database import Base
 
-# ---------------- USERS ----------------
 class User(Base):
     __tablename__ = "users"
 
@@ -17,11 +16,9 @@ class User(Base):
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
     updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
 
-    # Relationship to Shipments
     shipments = relationship("Shipment", back_populates="creator")
 
 
-# ---------------- SHIPMENTS (CORE) ----------------
 class Shipment(Base):
     __tablename__ = "shipments"
 
@@ -41,7 +38,6 @@ class Shipment(Base):
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
     updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
 
-    # Relationships to other modules
     creator = relationship("User", back_populates="shipments")
     documents = relationship("Document", back_populates="shipment", cascade="all, delete-orphan")
     tracking = relationship("ShipmentTracking", back_populates="shipment", cascade="all, delete-orphan")
@@ -50,7 +46,6 @@ class Shipment(Base):
     risk_assessment = relationship("RiskAssessment", back_populates="shipment", uselist=False, cascade="all, delete-orphan")
 
 
-# ---------------- DOCUMENTS ----------------
 class Document(Base):
     __tablename__ = "documents"
 
@@ -59,14 +54,12 @@ class Document(Base):
     file_url = Column(Text)
     doc_type = Column(String(50))
     status = Column(String(50))
-    extracted_data = Column(JSONB) # Using Postgres specific JSONB for better performance
+    extracted_data = Column(JSONB)
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
-    # Relationship back to Shipment
     shipment = relationship("Shipment", back_populates="documents")
 
 
-# ---------------- TRACKING ----------------
 class ShipmentTracking(Base):
     __tablename__ = "shipment_tracking"
 
@@ -77,11 +70,9 @@ class ShipmentTracking(Base):
     remarks = Column(Text)
     timestamp = Column(TIMESTAMP, server_default=func.current_timestamp())
 
-    # Relationship back to Shipment
     shipment = relationship("Shipment", back_populates="tracking")
 
 
-# ---------------- HSN ----------------
 class HSNClassification(Base):
     __tablename__ = "hsn_classifications"
 
@@ -93,11 +84,9 @@ class HSNClassification(Base):
     model_version = Column(String(20))
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
-    # Relationship back to Shipment
     shipment = relationship("Shipment", back_populates="hsn_classification")
 
 
-# ---------------- DUTY ----------------
 class Duty(Base):
     __tablename__ = "duties"
 
@@ -111,11 +100,9 @@ class Duty(Base):
     currency = Column(String(10))
     calculated_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
-    # Relationship back to Shipment
     shipment = relationship("Shipment", back_populates="duty")
 
 
-# ---------------- RISK ----------------
 class RiskAssessment(Base):
     __tablename__ = "risk_assessments"
 
@@ -127,5 +114,4 @@ class RiskAssessment(Base):
     model_version = Column(String(20))
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
-    # Relationship back to Shipment
     shipment = relationship("Shipment", back_populates="risk_assessment")
