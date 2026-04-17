@@ -2,7 +2,6 @@
 import re
 import numpy as np
 import torch
-from gensim.models import Word2Vec
 
 def clean_product_description(text: str) -> str:
     # Convert to lowercase and keep only alphanumeric characters and spaces [5]

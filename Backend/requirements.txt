@@ -1,6 +1,6 @@
 fastapi[standard]
 uvicorn[standard]
-sqlalchemy
+sqlalchemy[asyncio]
 asyncpg
 psycopg2-binary
 pdfplumber
@@ -21,4 +21,3 @@ pytesseract
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-dotenv==1.0.1
-gensim

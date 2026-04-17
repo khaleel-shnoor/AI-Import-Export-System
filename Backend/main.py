@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 import os
 import traceback
 from dotenv import load_dotenv
@@ -51,4 +52,4 @@ async def startup():
 async def global_exception_handler(request, exc):
     print("=== INTERNAL SERVER ERROR ===")
     print(traceback.format_exc())
-    return {"detail": "Internal Server Error"}
+    return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, BackgroundTasks, Depends
+from fastapi import APIRouter, UploadFile, File, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import async_session, get_db
 from models.models import Document, Shipment, HSNClassification
