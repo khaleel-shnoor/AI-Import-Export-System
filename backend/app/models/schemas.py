@@ -1,6 +1,18 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
+
+class AIPrediction(BaseModel):
+    distance_nm: float
+    total_delivery_time_days: float
+    expected_arrival_date: datetime
+    weather_condition: str
+    weather_severity: str
+    port_status: str
+    port_delay_description: str
+    confidence_score: float
+    prediction_model: str
+    prediction_message: str
 
 class Token(BaseModel):
     access_token: str
@@ -53,6 +65,7 @@ class ShipmentResponse(ShipmentBase):
     last_updated: Optional[datetime] = None
     user_id: Optional[int] = None
     updates: List[ShipmentUpdateResponse] = []
+    ai_prediction: Optional[AIPrediction] = None
     class Config:
         from_attributes = True
 

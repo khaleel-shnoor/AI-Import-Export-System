@@ -8,6 +8,7 @@ import json
 import uuid
 from datetime import datetime, timedelta
 from typing import List, Optional
+from app.infrastructure import ai_predictor
 
 router = APIRouter()
 
@@ -104,6 +105,15 @@ def track_shipment(identifier: str, db: Session = Depends(get_db)):
         # Fallback to mock only if explicitly needed for demo, 
         # but the user asked for DB storage, so let's stick to DB or 404
         raise HTTPException(status_code=404, detail="Shipment not found")
+    
+    # Inject AI Prediction
+    prediction = ai_predictor.get_shipment_prediction(
+        shipment.id, 
+        shipment.origin_country, 
+        shipment.destination_country, 
+        shipment.status
+    )
+    shipment.ai_prediction = prediction
     
     return shipment
 
