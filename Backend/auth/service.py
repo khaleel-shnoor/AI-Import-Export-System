@@ -50,3 +50,11 @@ async def create_user(db: AsyncSession, user_data: schemas.UserCreate):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Error creating user: {str(e)}"
         )
+
+async def update_user_password(db: AsyncSession, user: User, new_password: str):
+    """Update user password asynchronously"""
+    user.password_hash = utils.get_password_hash(new_password)
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user

@@ -149,3 +149,51 @@ async def login_json(
         refresh_token=refresh_token,
         token_type="bearer"
     )
+@router.post("/forgot-password")
+async def forgot_password(
+    request_data: schemas.ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Simulate sending a password reset email by logging to terminal"""
+    user = await service.get_user_by_email(db, request_data.email)
+    if not user:
+        # Don't reveal if user exists or not for security
+        return {"message": "If an account with that email exists, a reset link has been sent."}
+    
+    # Create a reset token (expiring in 30 minutes)
+    reset_token = utils.create_access_token(
+        data={"sub": user.email, "type": "password_reset"},
+        expires_delta=30 # 30 minutes
+    )
+    
+    # Simulate sending email
+    reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
+    print("\n" + "="*50)
+    print(f"PASSWORD RESET REQUEST FOR: {user.email}")
+    print(f"RESET LINK: {reset_link}")
+    print("="*50 + "\n")
+    
+    return {"message": "If an account with that email exists, a reset link has been sent."}
+
+@router.post("/reset-password")
+async def reset_password(
+    reset_data: schemas.ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Reset user password using a valid token"""
+    payload = utils.verify_access_token(reset_data.token)
+    if not payload or payload.get("type") != "password_reset":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    email = payload.get("sub")
+    user = await service.get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update password
+    await service.update_user_password(db, user, reset_data.new_password)
+    
+    return {"message": "Password successfully reset. You can now login with your new password."}

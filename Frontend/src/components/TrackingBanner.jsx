@@ -1,12 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Zap } from 'lucide-react';
 
 const TrackingBanner = () => {
   const [trackingNumber, setTrackingNumber] = useState('');
-  const [showResult, setShowResult] = useState(false);
+  const [shipment, setShipment] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleTrack = (e) => {
+  // WebSocket for Live Updates
+  useEffect(() => {
+    if (!shipment) return;
+
+    const ws = new WebSocket('ws://localhost:8000/ws/tracking');
+    
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'tracking_update' && message.data.shipment_id === shipment.id) {
+        // Update local shipment state with new data from WS
+        setShipment(prev => ({
+          ...prev,
+          status: message.data.status,
+          current_location: message.data.location
+        }));
+      }
+    };
+
+    return () => ws.close();
+  }, [shipment?.id]);
+
+  const handleTrack = async (e) => {
     e.preventDefault();
-    if (trackingNumber) setShowResult(true);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`http://localhost:8000/shipments/?code=${trackingNumber}`);
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        setShipment(data[0]);
+      } else {
+        setError('No shipment found with this tracking number.');
+        setShipment(null);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Connection error. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -19,44 +61,89 @@ const TrackingBanner = () => {
           <input 
             type="text" 
             placeholder="e.g. SHN-123456" 
-            className="flex-1 px-4 py-3 rounded text-slate-800 focus:outline-none focus:ring-2 focus:ring-white shadow-sm"
+            className="flex-1 px-4 py-3 rounded text-slate-800 focus:outline-none focus:ring-2 focus:ring-white shadow-sm font-bold"
             value={trackingNumber}
             onChange={(e) => setTrackingNumber(e.target.value)}
             required
           />
-          <button type="submit" className="px-8 py-3 bg-brand-navy hover:bg-slate-800 rounded font-bold transition-colors shadow-sm">
-            Track Now
+          <button 
+            type="submit" 
+            disabled={isLoading}
+            className="px-8 py-3 bg-brand-navy hover:bg-slate-800 rounded font-bold transition-colors shadow-sm disabled:opacity-70"
+          >
+            {isLoading ? 'Searching...' : 'Track Now'}
           </button>
         </form>
 
-        {showResult && (
-          <div className="mt-8 bg-white text-left p-6 rounded shadow-lg max-w-xl mx-auto text-slate-800 border border-slate-100">
-             <div className="flex justify-between items-center mb-4 border-b pb-3">
-                <span className="font-bold text-brand-navy">Shipment #{trackingNumber}</span>
-                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">In Transit</span>
-             </div>
-             <div className="space-y-4">
-                <div className="flex flex-col relative tracking-result">
-                  <div className="flex items-start mb-4">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full mt-1.5 mr-4 relative z-10"></div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">Departed Port of Origin</p>
-                      <p className="text-xs text-slate-500">Shanghai, China - Oct 12, 08:00 AM</p>
-                    </div>
-                  </div>
-                  <div className="absolute left-[5px] top-3 bottom-8 w-0.5 bg-slate-200"></div>
-                  
-                  <div className="flex items-start mb-4 ml-[26px]">
-                    <p className="text-xs text-slate-500 italic bg-slate-50 px-2 py-1 rounded border border-slate-100">Ocean transit via Vessel: Sea Explorer V</p>
-                  </div>
+        {error && <p className="mt-4 text-rose-200 font-bold animate-pulse">{error}</p>}
 
-                  <div className="flex items-start">
-                    <div className="w-3 h-3 border-2 border-blue-500 bg-white rounded-full mt-1.5 mr-4 relative z-10"></div>
+        {shipment && (
+          <div className="mt-8 bg-white text-left p-6 rounded-2xl shadow-2xl max-w-xl mx-auto text-slate-800 border border-slate-100 animate-fade-in">
+             <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                <div className="flex flex-col">
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Shipment Identifier</span>
+                   <span className="font-black text-xl text-brand-navy">{shipment.shipment_code}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Live Status</span>
+                   <span className="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase tracking-widest animate-pulse">
+                     {shipment.status}
+                   </span>
+                </div>
+             </div>
+             
+             <div className="space-y-6">
+                {/* AI Insight Section */}
+                {shipment.ai_insight && (
+                  <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex gap-3 animate-in fade-in zoom-in duration-500">
+                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0">
+                       <Zap size={20} fill="currentColor" />
+                    </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-800">Estimated Arrival</p>
-                      <p className="text-xs text-slate-500">Rotterdam, Netherlands - Oct 28</p>
+                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">AI Predictive Insight</p>
+                      <p className="text-sm font-medium text-slate-700 leading-relaxed italic">
+                        "{shipment.ai_insight}"
+                      </p>
                     </div>
                   </div>
+                )}
+
+                <div className="flex items-start gap-4">
+                   <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                      <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Origin Country</p>
+                      <p className="text-sm font-bold text-slate-800">{shipment.origin_country}</p>
+                   </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                   <div className="p-2 bg-blue-50 text-blue-600 rounded-lg animate-bounce">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Location</p>
+                      <p className="text-sm font-bold text-slate-800">{shipment.current_location || 'Port of Origin'}</p>
+                   </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                   <div className="p-2 bg-slate-50 text-slate-400 rounded-lg">
+                      <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Destination</p>
+                      <p className="text-sm font-bold text-slate-800">{shipment.destination_country}</p>
+                   </div>
+                </div>
+             </div>
+             
+             <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between">
+                <p className="text-[10px] font-bold text-slate-400 italic">Connected to Live Fleet Tracking Network</p>
+                <div className="flex gap-1">
+                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div>
+                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
                 </div>
              </div>
           </div>

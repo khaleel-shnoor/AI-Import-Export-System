@@ -2,12 +2,71 @@
 
 @theme {
   --color-brand-navy: #0f172a;
-  --color-brand-blue: #1d4ed8;
+  --color-brand-blue: #3b82f6;
   --color-brand-light: #f8fafc;
+  --font-display: "Outfit", "Inter", sans-serif;
+  
+  /* Refined, Mechanical Easing */
+  --ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-back: cubic-bezier(0.175, 0.885, 0.32, 1.1);
 }
 
 @layer base {
   body {
-    @apply bg-brand-light text-slate-800 font-sans;
+    @apply font-sans bg-[#f8fafc] text-slate-900 antialiased scroll-smooth;
   }
+}
+
+@layer components {
+  /* Subtle, Flat Glassmorphism */
+  .glass-card {
+    @apply bg-white/90 backdrop-blur-md border border-slate-200/60 shadow-sm transition-all duration-300;
+  }
+
+  .btn-premium {
+    @apply relative overflow-hidden bg-slate-900 text-white px-7 py-3 rounded-xl font-bold text-sm
+           transition-all duration-300 hover:bg-slate-800
+           active:scale-[0.98] flex items-center justify-center gap-2;
+  }
+
+  /* Subdued Interaction Utilities */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/40 hover:border-blue-200;
+  }
+
+  .row-interactive {
+    @apply transition-all duration-200 hover:bg-slate-50/80 cursor-pointer;
+  }
+}
+
+/* --- Subdued Animations --- */
+@keyframes shimmer-subtle {
+  0% { opacity: 0.1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 0.1; }
+}
+
+.animate-shimmer-subtle {
+  animation: shimmer-subtle 3s infinite ease-in-out;
+}
+
+@keyframes breathe-subtle {
+  0%, 100% { box-shadow: 0 0 0px rgba(239, 68, 68, 0); }
+  50% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+}
+
+.animate-breathe-subtle {
+  animation: breathe-subtle 3s infinite ease-in-out;
+}
+
+/* Scroll Reveal classes */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s var(--ease-premium);
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }

@@ -13,7 +13,8 @@ from .ocr import extract_text_from_file, process_invoice_with_llm
 from .schemas import ExtractedInvoiceData
 
 UPLOAD_DIR = Path("document_uploads")
-HSN_SERVICE_URL = os.getenv("HSN_SERVICE_URL", "http://127.0.0.1:8003")
+# Pointing to the unified gateway port for inter-service communication
+GATEWAY_URL = os.getenv("GATEWAY_URL", "http://127.0.0.1:8000")
 
 
 def save_upload_file(upload_file) -> tuple[str, str]:
@@ -28,23 +29,18 @@ def save_upload_file(upload_file) -> tuple[str, str]:
     return str(temp_path), file_ext
 
 
-async def classify_shipment_with_hsn(shipment_id: int, product_name: str) -> dict:
-    payload = {
-        "product_name": product_name,
-        "shipment_id": shipment_id,
-        "persist_result": True,
-    }
+async def call_internal_service(endpoint: str, payload: dict) -> dict:
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{HSN_SERVICE_URL}/hsn/",
+                f"{GATEWAY_URL}{endpoint}",
                 json=payload,
                 timeout=30,
             )
         response.raise_for_status()
         return response.json()
     except Exception as exc:
-        return {"error": f"HSN service call failed: {exc}"}
+        return {"error": f"Service call to {endpoint} failed: {exc}"}
 
 
 async def background_process_invoice(file_path: str, file_ext: str, doc_id: int):
@@ -77,25 +73,45 @@ async def background_process_invoice(file_path: str, file_ext: str, doc_id: int)
             destination_country=extracted_data.destination_country,
             description=extracted_data.description,
             currency=extracted_data.currency,
-            status="Pending",
+            status="Processing",
         )
 
         db.add(shipment)
         await db.commit()
         await db.refresh(shipment)
 
-        hsn_result = await classify_shipment_with_hsn(
-            shipment_id=shipment.id,
-            product_name=extracted_data.product_name,
-        )
+        # 1. HSN Classification
+        hsn_result = await call_internal_service("/hsn/", {
+            "product_name": extracted_data.product_name,
+            "shipment_id": shipment.id,
+            "persist_result": True
+        })
+
+        # 2. Duty Calculation
+        duty_result = await call_internal_service("/duty/", {
+            "shipment_id": shipment.id,
+            "persist_result": True
+        })
+
+        # 3. Risk Assessment
+        risk_result = await call_internal_service("/risk/assess/", {
+            "shipment_id": shipment.id,
+            "persist_result": True
+        })
 
         document.shipment_id = shipment.id
         document.status = "Completed"
         document.extracted_data = {
             **structured_json,
             "hsn_result": hsn_result,
+            "duty_result": duty_result,
+            "risk_result": risk_result
         }
+        
+        # Mark shipment as fully processed
+        shipment.status = "Pending Review"
         await db.commit()
+
     except ValidationError as exc:
         if document is not None:
             document.status = "Failed Validation"

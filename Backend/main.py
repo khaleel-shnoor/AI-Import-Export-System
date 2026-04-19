@@ -1,24 +1,24 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
 import traceback
-from dotenv import load_dotenv
+import asyncio
 
 from database import engine, Base
-from routers import document, shipment, tracking
+from tracking_service.service import listen_to_pg_tracking
+
+# Import new modular routers
 from auth.routes import router as auth_router
-import asyncio
-from services.websocket_service import listen_to_pg_tracking
+from document_service.routes import router as document_router
+from shipment_service.routes import router as shipment_router
+from analytics_service.routes import router as analytics_router
+from ai_service.routes import router as ai_router
+from hsn_service.routes import router as hsn_router
+from risk_service.routes import router as risk_router
+from duty_service.routes import router as duty_router
+from tracking_service.routes import router as tracking_router # I'll create this next to house WS
 
-# Load env
-load_dotenv()
+app = FastAPI(title="AI Import-Export Unified Gateway")
 
-OPENROUTER_API_KEY = os.getenv("OPEN_ROUTER_API_KEY")
-print("API KEY LOADED:", OPENROUTER_API_KEY is not None)
-
-app = FastAPI(title="AI Import-Export Intelligence System")
-
-# CORS setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,28 +27,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers
-app.include_router(document.router)
+# Register All Service Routers
 app.include_router(auth_router)
-app.include_router(shipment.router)
-app.include_router(tracking.router)
+app.include_router(document_router)
+app.include_router(shipment_router)
+app.include_router(analytics_router)
+app.include_router(ai_router)
+app.include_router(hsn_router)
+app.include_router(risk_router)
+app.include_router(duty_router)
+app.include_router(tracking_router)
 
-# Root endpoint
 @app.get("/")
 async def root():
-    return {"message": "AI Import-Export System Backend is Running ✅"}
+    return {"message": "Unified Gateway is active. All services integrated."}
 
-# Create tables on startup
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    # Start WebSocket PG listener background task
+    # Start the live tracking background task
     asyncio.create_task(listen_to_pg_tracking())
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    print("=== INTERNAL SERVER ERROR ===")
+    print("=== GATEWAY ERROR ===")
     print(traceback.format_exc())
     return {"detail": "Internal Server Error"}

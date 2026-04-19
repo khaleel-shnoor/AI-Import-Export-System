@@ -17,6 +17,7 @@ from .service import (
 router = APIRouter(prefix="/risk", tags=["Risk"])
 
 
+@router.post("/assess/", response_model=RiskAssessmentResult)
 @router.post("/", response_model=RiskAssessmentResult)
 async def calculate_risk(
     request: RiskAssessRequest,

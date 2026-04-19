@@ -26,7 +26,7 @@ class Shipment(Base):
     __tablename__ = "shipments"
 
     id = Column(Integer, primary_key=True, index=True)
-    shipment_code = Column(String(50), unique=True, index=True)
+    shipment_code = Column(String(100), unique=True, index=True)
     product_name = Column(Text)
     description = Column(Text)
     quantity = Column(Integer)
@@ -88,9 +88,9 @@ class HSNClassification(Base):
     id = Column(Integer, primary_key=True, index=True)
     shipment_id = Column(Integer, ForeignKey("shipments.id"))
     product_name = Column(Text)
-    hsn_code = Column(String(20))
+    hsn_code = Column(String(100))
     confidence_score = Column(Numeric)
-    model_version = Column(String(20))
+    model_version = Column(String(50))
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
     # Relationship back to Shipment
@@ -103,7 +103,7 @@ class Duty(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     shipment_id = Column(Integer, ForeignKey("shipments.id"))
-    hsn_code = Column(String(20))
+    hsn_code = Column(String(100))
     duty_amount = Column(Numeric)
     tax_amount = Column(Numeric)
     other_charges = Column(Numeric)
@@ -122,9 +122,9 @@ class RiskAssessment(Base):
     id = Column(Integer, primary_key=True, index=True)
     shipment_id = Column(Integer, ForeignKey("shipments.id"))
     risk_score = Column(Numeric)
-    risk_level = Column(String(20))
+    risk_level = Column(String(50))
     reason = Column(Text)
-    model_version = Column(String(20))
+    model_version = Column(String(50))
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
 
     # Relationship back to Shipment

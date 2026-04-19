@@ -10,6 +10,7 @@ from .service import background_process_invoice, save_upload_file
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 
+@router.post("/upload", response_model=DocumentResponse)
 @router.post("/upload-invoice/", response_model=DocumentResponse)
 async def upload_invoice(
     background_tasks: BackgroundTasks,
@@ -39,6 +40,17 @@ async def upload_invoice(
         extracted_data=new_doc.extracted_data,
         created_at=new_doc.created_at,
     )
+
+
+@router.get("/", response_model=list[DocumentResponse])
+async def list_documents(
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db)
+):
+    from sqlalchemy import select
+    result = await db.execute(select(Document).offset(skip).limit(limit).order_by(Document.created_at.desc()))
+    return result.scalars().all()
 
 
 @router.get("/{doc_id}", response_model=DocumentResponse)
