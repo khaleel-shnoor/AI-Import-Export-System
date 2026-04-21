@@ -13,20 +13,37 @@ async def seed():
         await conn.run_sync(Base.metadata.create_all)
 
     async with async_session() as db:
-        # 1. Seed User
-        admin_email = "admin@shnoor.ai"
+        # 1. Seed Users
+        # NOTE: Passwords here are for development seeding only.
+        # In a production environment, users should be invited or register themselves.
+        users_to_seed = [
+            {
+                "name": "System Admin",
+                "email": "admin@shnoor.ai",
+                "password": "admin123",
+                "role": "admin"
+            },
+            {
+                "name": "Praneeth",
+                "email": "praneeth@shnoor.ai",
+                "password": "password123",
+                "role": "analyst"
+            }
+        ]
+
         from sqlalchemy import select
-        user_stmt = select(User).where(User.email == admin_email)
-        user_res = await db.execute(user_stmt)
-        if not user_res.scalars().first():
-            admin = User(
-                name="System Admin",
-                email=admin_email,
-                password_hash=pwd_context.hash("admin123"),
-                role="admin"
-            )
-            db.add(admin)
-            print("Added admin user.")
+        for user_data in users_to_seed:
+            user_stmt = select(User).where(User.email == user_data["email"])
+            user_res = await db.execute(user_stmt)
+            if not user_res.scalars().first():
+                new_user = User(
+                    name=user_data["name"],
+                    email=user_data["email"],
+                    password_hash=pwd_context.hash(user_data["password"]),
+                    role=user_data["role"]
+                )
+                db.add(new_user)
+                print(f"Added user: {user_data['email']} ({user_data['role']})")
 
         # 2. Seed Country Tax Rules
         countries = [
