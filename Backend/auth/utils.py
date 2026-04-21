@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Union, Optional
 from jose import JWTError, jwt
 import bcrypt
 from dotenv import load_dotenv
@@ -34,7 +35,7 @@ def get_password_hash(password: str) -> str:
     hashed = bcrypt.hashpw(pw_bytes, salt)
     return hashed.decode('utf-8')
 
-def create_access_token(data: dict, expires_delta: timedelta | int | None = None):
+def create_access_token(data: dict, expires_delta: Union[timedelta, int, None] = None):
     """Create short-lived access token"""
     to_encode = data.copy()
     if isinstance(expires_delta, int):
@@ -53,7 +54,7 @@ def verify_access_token(token: str):
     except JWTError:
         return None
 
-def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create long-lived refresh token"""
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS))

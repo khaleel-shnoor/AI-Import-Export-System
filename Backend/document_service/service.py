@@ -12,8 +12,10 @@ from models.models import Document, Shipment
 from .ocr import extract_text_from_file, process_invoice_with_llm
 from .schemas import ExtractedInvoiceData
 
+from config import config
+import os
+
 UPLOAD_DIR = Path("document_uploads")
-# Pointing to the unified gateway port for inter-service communication
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://127.0.0.1:8000")
 
 
