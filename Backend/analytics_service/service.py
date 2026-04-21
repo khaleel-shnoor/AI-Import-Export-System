@@ -94,13 +94,14 @@ async def get_dashboard_summary(db: AsyncSession, start_date: str = None, end_da
     # Using a cross-service approach for better insight
     from sqlalchemy import extract
     
-    history_stmt = select(
+    base_history_stmt = select(
         extract('month', Shipment.created_at).label('month'),
         func.sum(Shipment.total_value).label('revenue'),
         func.count(Shipment.id).label('count')
-    ).group_by('month').order_by('month')
+    )
     
-    history_res = await db.execute(history_stmt)
+    filtered_history_stmt = apply_filters(base_history_stmt, Shipment).group_by('month').order_by('month')
+    history_res = await db.execute(filtered_history_stmt)
     history_series = []
     month_names = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     
@@ -224,7 +225,7 @@ async def get_hsn_analytics(db: AsyncSession):
             "id": hsn.id,
             "product": shipment.product_name,
             "hsn_code": hsn.hsn_code,
-            "confidence": float(hsn.confidence_score or 0) * 100,
+            "confidence": float(hsn.confidence_score or 0),
             "model_version": hsn.model_version or "Pipeline-v2.0",
             "status": "Verified" if (hsn.confidence_score or 0) > 0.9 else "Review Needed",
             "shipment_code": shipment.shipment_code,
@@ -232,6 +233,6 @@ async def get_hsn_analytics(db: AsyncSession):
 
     return {
         "total": total,
-        "avg_confidence": round(avg_conf * 100, 1),
+        "avg_confidence": round(avg_conf, 1),
         "items": items,
     }
